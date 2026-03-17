@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transfer Pricing Calculator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <h1>Transfer Pricing Calculator</h1>
+
+    <label>Transaction Amount</label>
+    <input type="number" id="amount" placeholder="Enter amount" />
+
+    <label>Processing Cost (%)</label>
+    <input type="number" id="processing" placeholder="Enter processing %" />
+
+    <label>Markup (%)</label>
+    <input type="number" id="markup" placeholder="Enter markup %" />
+
+    <button onclick="calculateTotal()">Calculate</button>
+
+    <div class="results">
+      <p>Processing Fee: <span id="processingFee">-</span></p>
+      <p>Markup Fee: <span id="markupFee">-</span></p>
+      <p>Total Payable Amount: <span id="totalPayable">-</span></p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
