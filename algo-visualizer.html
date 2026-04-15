@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlgoViz — Sorting Algorithm Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e1117;
+    --surface: #161b22;
+    --border: #21262d;
+    --text: #c9d1d9;
+    --muted: #58677a;
+    --accent: #f78166;
+    --blue: #79c0ff;
+    --green: #56d364;
+    --yellow: #e3b341;
+    --purple: #d2a8ff;
+    --bar-default: #1f4068;
+    --bar-compare: #e3b341;
+    --bar-swap: #f78166;
+    --bar-sorted: #56d364;
+    --bar-pivot: #d2a8ff;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+  }
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .logo { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.03em; }
+  .logo span { color: var(--accent); }
+  .stats-row { display: flex; gap: 1.5rem; }
+  .stat { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; }
+  .stat-label { color: var(--muted); }
+  .stat-val { color: var(--blue); font-weight: 600; }
+
+  .main { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+  .ctrl-group { display: flex; gap: 0.4rem; align-items: center; }
+  .ctrl-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 0.2rem; }
+  .algo-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .algo-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .algo-btn.active { background: rgba(121,192,255,0.1); border-color: var(--blue); color: var(--blue); }
+  .btn {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-run { background: var(--accent); color: var(--bg); }
+  .btn-run:hover { opacity: 0.85; }
+  .btn-run:disabled { opacity: 0.4; cursor: default; }
+  .btn-new { background: var(--border); color: var(--text); }
+  .btn-new:hover { background: #30363d; }
+  .range-wrap { display: flex; align-items: center; gap: 0.5rem; }
+  input[type=range] {
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    cursor: pointer;
+    width: 90px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--blue);
+    cursor: pointer;
+  }
+  .range-val { font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: var(--blue); min-width: 28px; }
+
+  /* Visualizer */
+  .viz-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+  #bar-area {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 260px;
+    padding-bottom: 0;
+  }
+  .bar {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    background: var(--bar-default);
+    transition: height 0.03s linear;
+    min-width: 4px;
+    position: relative;
+  }
+  .bar.compare { background: var(--bar-compare); }
+  .bar.swap { background: var(--bar-swap); }
+  .bar.sorted { background: var(--bar-sorted); }
+  .bar.pivot { background: var(--bar-pivot); }
+
+  .status-line {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.8rem;
+    min-height: 1.2rem;
+  }
+  .status-line span { color: var(--text); }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.2rem;
+  }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--muted); }
+  .legend-box { width: 12px; height: 12px; border-radius: 2px; }
+
+  /* Info panel */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem;
+  }
+  .info-card h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.8rem; color: var(--accent); }
+  .complexity-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.8rem;
+  }
+  .complexity-row:last-child { border: none; }
+  .cplx-label { color: var(--muted); }
+  .cplx-val { font-family: 'IBM Plex Mono', monospace; color: var(--purple); font-weight: 600; }
+  .cplx-val.good { color: var(--green); }
+  .cplx-val.mid { color: var(--yellow); }
+  .cplx-val.bad { color: var(--accent); }
+
+  .explain { font-size: 0.83rem; color: var(--muted); line-height: 1.6; }
+  .explain strong { color: var(--text); }
+
+  /* Counter */
+  .counters { display: flex; gap: 1.5rem; margin-top: 0.5rem; }
+  .counter { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; }
+  .cnt-lbl { color: var(--muted); }
+  .cnt-n { font-size: 1rem; font-weight: 600; }
+  .comparisons { color: var(--yellow); }
+  .swaps { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">ALGO<span>VIZ</span></div>
+  <div class="stats-row">
+    <div class="stat"><span class="stat-label">COMPARISONS </span><span class="stat-val" id="cmp-hdr">0</span></div>
+    <div class="stat"><span class="stat-label">SWAPS </span><span class="stat-val" id="swp-hdr">0</span></div>
+    <div class="stat"><span class="stat-label">TIME </span><span class="stat-val" id="time-hdr">0ms</span></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="controls">
+    <div class="ctrl-group">
+      <span class="ctrl-label">Algorithm:</span>
+      <button class="algo-btn active" onclick="selectAlgo('bubble')">Bubble</button>
+      <button class="algo-btn" onclick="selectAlgo('selection')">Selection</button>
+      <button class="algo-btn" onclick="selectAlgo('insertion')">Insertion</button>
+      <button class="algo-btn" onclick="selectAlgo('merge')">Merge</button>
+      <button class="algo-btn" onclick="selectAlgo('quick')">Quick</button>
+    </div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">Size:</span>
+      <div class="range-wrap">
+        <input type="range" id="size-range" min="10" max="80" value="40" oninput="updateSize()">
+        <span class="range-val" id="size-val">40</span>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">Speed:</span>
+      <div class="range-wrap">
+        <input type="range" id="speed-range" min="1" max="100" value="50">
+        <span class="range-val">⚡</span>
+      </div>
+    </div>
+    <button class="btn btn-new" onclick="newArray()">New Array</button>
+    <button class="btn btn-run" id="run-btn" onclick="runSort()">▶ Sort</button>
+  </div>
+
+  <div class="viz-container">
+    <div class="legend">
+      <div class="legend-item"><div class="legend-box" style="background:var(--bar-default)"></div>Unsorted</div>
+      <div class="legend-item"><div class="legend-box" style="background:var(--bar-compare)"></div>Comparing</div>
+      <div class="legend-item"><div class="legend-box" style="background:var(--bar-swap)"></div>Swapping</div>
+      <div class="legend-item"><div class="legend-box" style="background:var(--bar-pivot)"></div>Pivot</div>
+      <div class="legend-item"><div class="legend-box" style="background:var(--bar-sorted)"></div>Sorted</div>
+    </div>
+    <div id="bar-area"></div>
+    <div class="status-line" id="status">Select an algorithm and press Sort to begin.</div>
+    <div class="counters">
+      <div class="counter comparisons">Comparisons: <span class="cnt-n" id="cmp">0</span></div>
+      <div class="counter swaps">Swaps: <span class="cnt-n" id="swp">0</span></div>
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <h3 id="algo-name">Bubble Sort</h3>
+      <div class="complexity-row"><span class="cplx-label">Best Case</span><span class="cplx-val good" id="c-best">O(n)</span></div>
+      <div class="complexity-row"><span class="cplx-label">Average Case</span><span class="cplx-val mid" id="c-avg">O(n²)</span></div>
+      <div class="complexity-row"><span class="cplx-label">Worst Case</span><span class="cplx-val bad" id="c-worst">O(n²)</span></div>
+      <div class="complexity-row"><span class="cplx-label">Space</span><span class="cplx-val good" id="c-space">O(1)</span></div>
+      <div class="complexity-row"><span class="cplx-label">Stable</span><span class="cplx-val good" id="c-stable">Yes</span></div>
+    </div>
+    <div class="info-card">
+      <h3>How It Works</h3>
+      <p class="explain" id="algo-explain">Bubble sort repeatedly compares adjacent elements and swaps them if they're in the wrong order. Each pass "bubbles" the largest element to the end. It's simple but inefficient for large datasets.</p>
+    </div>
+    <div class="info-card">
+      <h3>When To Use</h3>
+      <p class="explain" id="algo-use">Use bubble sort only for <strong>educational purposes</strong> or when the array is nearly sorted. Its O(n²) complexity makes it impractical for real-world large datasets. Nearly-sorted arrays can achieve O(n).</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let arr = [];
+let sorting = false;
+let selectedAlgo = 'bubble';
+let comparisons = 0, swaps = 0;
+let startTime;
+
+const ALGO_INFO = {
+  bubble: {
+    name: 'Bubble Sort',
+    best: 'O(n)', avg: 'O(n²)', worst: 'O(n²)', space: 'O(1)', stable: 'Yes',
+    bestClass: 'good', avgClass: 'mid', worstClass: 'bad',
+    explain: 'Bubble sort repeatedly compares adjacent elements and swaps them if out of order. Each pass "bubbles" the largest unsorted element to its correct position.',
+    use: 'Use only for educational purposes or nearly-sorted arrays. Its O(n²) complexity is impractical for large real-world datasets, though nearly-sorted arrays can achieve O(n).'
+  },
+  selection: {
+    name: 'Selection Sort',
+    best: 'O(n²)', avg: 'O(n²)', worst: 'O(n²)', space: 'O(1)', stable: 'No',
+    bestClass: 'bad', avgClass: 'bad', worstClass: 'bad',
+    explain: 'Selection sort finds the minimum element from the unsorted portion and places it at the front. It makes exactly n-1 swaps, making it useful when writes are expensive.',
+    use: 'Good when <strong>memory writes are costly</strong> (flash memory), since it minimizes swaps. Generally outperformed by insertion sort for practical use cases with small arrays.'
+  },
+  insertion: {
+    name: 'Insertion Sort',
+    best: 'O(n)', avg: 'O(n²)', worst: 'O(n²)', space: 'O(1)', stable: 'Yes',
+    bestClass: 'good', avgClass: 'mid', worstClass: 'bad',
+    explain: 'Insertion sort builds the sorted array one element at a time by inserting each new element into its correct position, like sorting playing cards in your hand.',
+    use: 'Excellent for <strong>small arrays</strong> or <strong>nearly-sorted data</strong>. Used by production sort algorithms (like Timsort) as a base case for small partitions. O(n) on sorted input.'
+  },
+  merge: {
+    name: 'Merge Sort',
+    best: 'O(n log n)', avg: 'O(n log n)', worst: 'O(n log n)', space: 'O(n)', stable: 'Yes',
+    bestClass: 'good', avgClass: 'good', worstClass: 'good',
+    explain: 'Merge sort divides the array in half recursively, sorts each half, then merges them back in order. It guarantees O(n log n) performance in all cases using divide and conquer.',
+    use: 'Ideal when <strong>stable sorting</strong> is required and memory isn\'t a constraint. Used for sorting linked lists and external sorting of large datasets that don\'t fit in memory.'
+  },
+  quick: {
+    name: 'Quick Sort',
+    best: 'O(n log n)', avg: 'O(n log n)', worst: 'O(n²)', space: 'O(log n)', stable: 'No',
+    bestClass: 'good', avgClass: 'good', worstClass: 'bad',
+    explain: 'Quick sort picks a pivot, partitions elements smaller to the left and larger to the right, then recursively sorts each partition. In-place and very cache-efficient.',
+    use: 'The go-to for <strong>general-purpose sorting</strong> in practice. Most standard library sort implementations use quicksort or a hybrid. Worst-case O(n²) is rare with good pivot selection.'
+  }
+};
+
+function selectAlgo(a) {
+  selectedAlgo = a;
+  document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  const info = ALGO_INFO[a];
+  document.getElementById('algo-name').textContent = info.name;
+  document.getElementById('c-best').textContent = info.best;
+  document.getElementById('c-best').className = 'cplx-val ' + info.bestClass;
+  document.getElementById('c-avg').textContent = info.avg;
+  document.getElementById('c-avg').className = 'cplx-val ' + info.avgClass;
+  document.getElementById('c-worst').textContent = info.worst;
+  document.getElementById('c-worst').className = 'cplx-val ' + info.worstClass;
+  document.getElementById('c-space').textContent = info.space;
+  document.getElementById('c-stable').textContent = info.stable;
+  document.getElementById('algo-explain').innerHTML = info.explain;
+  document.getElementById('algo-use').innerHTML = info.use;
+}
+
+function updateSize() {
+  const v = document.getElementById('size-range').value;
+  document.getElementById('size-val').textContent = v;
+  newArray();
+}
+
+function newArray() {
+  if (sorting) return;
+  const n = parseInt(document.getElementById('size-range').value);
+  arr = Array.from({length: n}, () => Math.floor(Math.random() * 240) + 10);
+  comparisons = 0; swaps = 0;
+  updateCounters();
+  renderBars(arr, [], [], [], [], []);
+  document.getElementById('status').textContent = 'New array generated. Press Sort to begin.';
+}
+
+function renderBars(data, comparing=[], swapping=[], sorted=[], pivot=[], merging=[]) {
+  const area = document.getElementById('bar-area');
+  const max = Math.max(...data);
+  area.innerHTML = data.map((v, i) => {
+    let cls = 'bar';
+    if (sorted.includes(i)) cls += ' sorted';
+    else if (swapping.includes(i)) cls += ' swap';
+    else if (pivot.includes(i)) cls += ' pivot';
+    else if (comparing.includes(i) || merging.includes(i)) cls += ' compare';
+    const h = Math.max((v / max) * 240, 4);
+    return `<div class="${cls}" style="height:${h}px"></div>`;
+  }).join('');
+}
+
+function delay() {
+  const speed = parseInt(document.getElementById('speed-range').value);
+  const ms = Math.round(400 / speed * 2);
+  return new Promise(r => setTimeout(r, Math.max(1, ms)));
+}
+
+function updateCounters() {
+  document.getElementById('cmp').textContent = comparisons;
+  document.getElementById('swp').textContent = swaps;
+  document.getElementById('cmp-hdr').textContent = comparisons;
+  document.getElementById('swp-hdr').textContent = swaps;
+}
+
+async function runSort() {
+  if (sorting) return;
+  sorting = true;
+  comparisons = 0; swaps = 0;
+  document.getElementById('run-btn').disabled = true;
+  startTime = Date.now();
+  const a = [...arr];
+  const sortedSet = new Set();
+
+  if (selectedAlgo === 'bubble') await bubbleSort(a, sortedSet);
+  else if (selectedAlgo === 'selection') await selectionSort(a, sortedSet);
+  else if (selectedAlgo === 'insertion') await insertionSort(a, sortedSet);
+  else if (selectedAlgo === 'merge') await mergeSortWrapper(a);
+  else if (selectedAlgo === 'quick') await quickSortWrapper(a);
+
+  const elapsed = Date.now() - startTime;
+  document.getElementById('time-hdr').textContent = elapsed + 'ms';
+  // Mark all sorted
+  renderBars(a, [], [], Array.from({length: a.length}, (_, i) => i), []);
+  document.getElementById('status').textContent = `✅ Sorted! ${comparisons} comparisons, ${swaps} swaps in ${elapsed}ms`;
+  arr = a;
+  sorting = false;
+  document.getElementById('run-btn').disabled = false;
+}
+
+async function bubbleSort(a, ss) {
+  const n = a.length;
+  for (let i = 0; i < n - 1; i++) {
+    let swapped = false;
+    for (let j = 0; j < n - i - 1; j++) {
+      comparisons++;
+      renderBars(a, [j, j+1], [], [...ss], []);
+      document.getElementById('status').textContent = `Comparing a[${j}]=${a[j]} and a[${j+1}]=${a[j+1]}`;
+      updateCounters();
+      await delay();
+      if (a[j] > a[j+1]) {
+        [a[j], a[j+1]] = [a[j+1], a[j]];
+        swaps++; swapped = true;
+        renderBars(a, [], [j, j+1], [...ss], []);
+        updateCounters();
+        await delay();
+      }
+    }
+    ss.add(n - 1 - i);
+    if (!swapped) break;
+  }
+  ss.add(0);
+}
+
+async function selectionSort(a, ss) {
+  const n = a.length;
+  for (let i = 0; i < n - 1; i++) {
+    let minIdx = i;
+    for (let j = i + 1; j < n; j++) {
+      comparisons++;
+      renderBars(a, [j, minIdx], [], [...ss], [i]);
+      document.getElementById('status').textContent = `Finding min in range [${i}, ${n-1}]. Current min: a[${minIdx}]=${a[minIdx]}`;
+      updateCounters();
+      await delay();
+      if (a[j] < a[minIdx]) minIdx = j;
+    }
+    if (minIdx !== i) {
+      [a[i], a[minIdx]] = [a[minIdx], a[i]];
+      swaps++;
+      renderBars(a, [], [i, minIdx], [...ss], []);
+      updateCounters();
+      await delay();
+    }
+    ss.add(i);
+  }
+  ss.add(n-1);
+}
+
+async function insertionSort(a, ss) {
+  const n = a.length;
+  ss.add(0);
+  for (let i = 1; i < n; i++) {
+    const key = a[i];
+    let j = i - 1;
+    renderBars(a, [i], [], [...ss], []);
+    document.getElementById('status').textContent = `Inserting a[${i}]=${key} into sorted portion`;
+    await delay();
+    while (j >= 0 && a[j] > key) {
+      comparisons++;
+      a[j+1] = a[j];
+      swaps++;
+      renderBars(a, [j], [j+1], [...ss], [i]);
+      updateCounters();
+      await delay();
+      j--;
+    }
+    comparisons++;
+    a[j+1] = key;
+    ss.add(i);
+    renderBars(a, [], [], [...ss], []);
+    updateCounters();
+    await delay();
+  }
+}
+
+async function mergeSortWrapper(a) {
+  await mergeSort(a, 0, a.length - 1);
+}
+
+async function mergeSort(a, l, r) {
+  if (l >= r) return;
+  const m = Math.floor((l + r) / 2);
+  await mergeSort(a, l, m);
+  await mergeSort(a, m+1, r);
+  await merge(a, l, m, r);
+}
+
+async function merge(a, l, m, r) {
+  const L = a.slice(l, m+1), R = a.slice(m+1, r+1);
+  let i=0, j=0, k=l;
+  while (i < L.length && j < R.length) {
+    comparisons++;
+    renderBars(a, Array.from({length: r-l+1}, (_,x)=>l+x), [], [], []);
+    document.getElementById('status').textContent = `Merging [${l}..${m}] and [${m+1}..${r}]`;
+    updateCounters();
+    await delay();
+    if (L[i] <= R[j]) { a[k++] = L[i++]; }
+    else { a[k++] = R[j++]; swaps++; }
+  }
+  while (i < L.length) { a[k++] = L[i++]; }
+  while (j < R.length) { a[k++] = R[j++]; }
+}
+
+async function quickSortWrapper(a) {
+  await quickSort(a, 0, a.length - 1);
+}
+
+async function quickSort(a, low, high) {
+  if (low < high) {
+    const pi = await partition(a, low, high);
+    await quickSort(a, low, pi - 1);
+    await quickSort(a, pi + 1, high);
+  }
+}
+
+async function partition(a, low, high) {
+  const pivot = a[high];
+  let i = low - 1;
+  for (let j = low; j < high; j++) {
+    comparisons++;
+    renderBars(a, [j], [], [], [high]);
+    document.getElementById('status').textContent = `Pivot=${pivot}, comparing a[${j}]=${a[j]}`;
+    updateCounters();
+    await delay();
+    if (a[j] < pivot) {
+      i++;
+      [a[i], a[j]] = [a[j], a[i]];
+      swaps++;
+      renderBars(a, [], [i, j], [], [high]);
+      updateCounters();
+      await delay();
+    }
+  }
+  [a[i+1], a[high]] = [a[high], a[i+1]];
+  swaps++;
+  return i + 1;
+}
+
+// Init
+newArray();
+selectAlgo('bubble');
+</script>
+</body>
+</html>
