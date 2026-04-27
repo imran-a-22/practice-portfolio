@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timeline Trek</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #111827; color: #f9fafb; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
+    .layout { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; }
+    .panel { background: #1f2937; border: 1px solid #374151; border-radius: 14px; padding: 16px; }
+    .events, .timeline { display: grid; gap: 10px; }
+    .timeline { grid-template-columns: 1fr 1fr 1fr; }
+    .event, .slot { border-radius: 12px; padding: 12px; min-height: 62px; display: flex; align-items: center; justify-content: center; text-align: center; }
+    .event { background: #7c3aed; cursor: grab; user-select: none; font-weight: bold; }
+    .slot { border: 2px dashed #6b7280; background: #111827; }
+    button { border: 0; border-radius: 10px; padding: 10px 14px; font-weight: bold; cursor: pointer; }
+    #checkBtn { background: #2563eb; color: white; }
+    #nextBtn { background: #4b5563; color: white; }
+    .fact { background: #111827; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 8px; margin-top: 10px; }
+    @media (max-width: 820px) { .layout { grid-template-columns: 1fr; } .timeline { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Timeline Trek</h1>
+  <p>Put major events in the correct historical order. Learn history by building timelines.</p>
+  <div class="layout">
+    <div class="panel">
+      <h3>Timeline slots: earliest to latest</h3>
+      <div class="timeline" id="timeline"></div>
+      <h3 style="margin-top:18px;">Event cards</h3>
+      <div class="events" id="events"></div>
+      <div style="margin-top:14px;">
+        <button id="checkBtn">Check Timeline</button>
+        <button id="nextBtn">Next Set</button>
+      </div>
+    </div>
+    <div class="panel">
+      <p>Score: <span id="score">0</span> | Set: <span id="setNum">1</span></p>
+      <p id="message">Drag three events into order.</p>
+      <div class="fact" id="factBox">A timeline helps you see cause, effect, and sequence in history.</div>
+      <h3>Learning notes</h3>
+      <ul>
+        <li>Start by finding the oldest date first.</li>
+        <li>Then compare the remaining dates.</li>
+        <li>Historical order helps explain what happened before and after.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  const sets = [
+    [
+      { label: "Printing press spreads in Europe", year: 1440, fact: "The printing press helped knowledge travel much faster." },
+      { label: "American Declaration of Independence", year: 1776, fact: "This declared that the American colonies were independent from Britain." },
+      { label: "First Moon landing", year: 1969, fact: "Apollo 11 landed humans on the Moon." }
+    ],
+    [
+      { label: "Fall of the Western Roman Empire", year: 476, fact: "This is often used as a marker for the end of ancient history in Western Europe." },
+      { label: "Magna Carta signed", year: 1215, fact: "Magna Carta limited the power of the king in England." },
+      { label: "French Revolution begins", year: 1789, fact: "The revolution changed France and influenced politics worldwide." }
+    ],
+    [
+      { label: "Columbus reaches the Americas", year: 1492, fact: "This voyage connected Europe and the Americas more directly." },
+      { label: "Steam locomotive era expands", year: 1804, fact: "Steam power transformed transport and industry." },
+      { label: "World Wide Web introduced", year: 1989, fact: "The web changed communication, information, and business." }
+    ]
+  ];
+
+  const timelineEl = document.getElementById('timeline');
+  const eventsEl = document.getElementById('events');
+  const scoreEl = document.getElementById('score');
+  const setNumEl = document.getElementById('setNum');
+  const messageEl = document.getElementById('message');
+  const factBox = document.getElementById('factBox');
+  let setIndex = 0;
+  let score = 0;
+  let dragged = null;
+
+  function shuffle(a) {
+    const arr = a.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function makeSlot(i) {
+    const el = document.createElement('div');
+    el.className = 'slot';
+    el.dataset.index = i;
+    el.textContent = 'Position ' + (i + 1);
+    el.addEventListener('dragover', e => e.preventDefault());
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragged) return;
+      const existing = el.querySelector('.event');
+      if (existing) eventsEl.appendChild(existing);
+      el.textContent = '';
+      el.appendChild(dragged);
+    });
+    return el;
+  }
+
+  function makeCard(item) {
+    const el = document.createElement('div');
+    el.className = 'event';
+    el.draggable = true;
+    el.dataset.year = item.year;
+    el.dataset.fact = item.fact;
+    el.textContent = item.label;
+    el.addEventListener('dragstart', () => dragged = el);
+    return el;
+  }
+
+  function renderSet() {
+    timelineEl.innerHTML = '';
+    eventsEl.innerHTML = '';
+    for (let i = 0; i < 3; i++) timelineEl.appendChild(makeSlot(i));
+    shuffle(sets[setIndex]).forEach(item => eventsEl.appendChild(makeCard(item)));
+    eventsEl.addEventListener('dragover', e => e.preventDefault());
+    eventsEl.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragged) eventsEl.appendChild(dragged);
+    });
+    setNumEl.textContent = setIndex + 1;
+    messageEl.textContent = 'Drag three events into order.';
+    factBox.textContent = 'A timeline helps you see cause, effect, and sequence in history.';
+  }
+
+  function check() {
+    const items = [...timelineEl.children].map(slot => slot.querySelector('.event'));
+    if (items.some(x => !x)) {
+      messageEl.textContent = 'Fill all timeline positions first.';
+      return;
+    }
+    const years = items.map(x => Number(x.dataset.year));
+    const sorted = years.slice().sort((a,b) => a - b);
+    const ok = years.every((y, i) => y === sorted[i]);
+    if (ok) {
+      score += 10;
+      scoreEl.textContent = score;
+      messageEl.textContent = 'Correct order. Nice timeline building.';
+      factBox.textContent = items.map(x => x.dataset.year + ': ' + x.dataset.fact).join(' ');
+      setIndex = (setIndex + 1) % sets.length;
+      setTimeout(renderSet, 1200);
+    } else {
+      score = Math.max(0, score - 2);
+      scoreEl.textContent = score;
+      messageEl.textContent = 'Not yet. Compare the years again.';
+      const earliest = sets[setIndex].slice().sort((a,b) => a.year - b.year)[0];
+      factBox.textContent = 'Hint: the earliest event in this set is ' + earliest.label + ' (' + earliest.year + ').';
+    }
+  }
+
+  document.getElementById('checkBtn').addEventListener('click', check);
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    setIndex = (setIndex + 1) % sets.length;
+    renderSet();
+  });
+
+  renderSet();
+})();
+</script>
+</body>
+</html>
