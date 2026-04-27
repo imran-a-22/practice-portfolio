@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Chain Builder</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #ecfccb; color: #1f2937; }
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 20px; }
+    .layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 18px; }
+    .panel { background: rgba(255,255,255,0.92); border: 1px solid #bef264; border-radius: 14px; padding: 16px; }
+    .zones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .zone { min-height: 70px; border: 2px dashed #84cc16; border-radius: 12px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; background: #f7fee7; }
+    .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+    .card { background: #65a30d; color: white; border-radius: 12px; padding: 12px; cursor: grab; user-select: none; font-weight: bold; text-align: center; }
+    button { background: #15803d; color: white; border: 0; border-radius: 10px; padding: 10px 14px; cursor: pointer; font-weight: bold; margin-right: 8px; }
+    .tip { background: #dcfce7; border-left: 4px solid #16a34a; padding: 12px; border-radius: 8px; margin-top: 10px; }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } .zones { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Food Chain Builder</h1>
+  <p>Build a simple ecosystem chain in the right order: source, producer, herbivore, predator.</p>
+  <div class="layout">
+    <div class="panel">
+      <div class="zones" id="zones"></div>
+      <div class="cards" id="cards"></div>
+      <div style="margin-top:14px;">
+        <button id="checkBtn">Check Chain</button>
+        <button id="newBtn">New Ecosystem</button>
+      </div>
+    </div>
+    <div class="panel">
+      <p>Score: <span id="score">0</span> | Level: <span id="level">1</span></p>
+      <p id="message">Drag each card into the correct stage.</p>
+      <div class="tip" id="tipBox">A producer makes its own food, usually using sunlight.</div>
+      <h3>Mini lesson</h3>
+      <ul>
+        <li>Energy usually starts with the Sun.</li>
+        <li>Plants are producers because they make food through photosynthesis.</li>
+        <li>Herbivores eat plants. Predators eat other animals.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  const ecosystems = [
+    {
+      tip: "In grasslands, grass is the producer and many small plant-eaters depend on it.",
+      items: { source: "Sun", producer: "Grass", herbivore: "Rabbit", predator: "Fox" }
+    },
+    {
+      tip: "In ponds, algae often begin the chain for tiny aquatic animals.",
+      items: { source: "Sun", producer: "Algae", herbivore: "Snail", predator: "Fish" }
+    },
+    {
+      tip: "Leaves from plants support insects, which then feed birds.",
+      items: { source: "Sun", producer: "Leaves", herbivore: "Caterpillar", predator: "Bird" }
+    }
+  ];
+
+  const zonesEl = document.getElementById('zones');
+  const cardsEl = document.getElementById('cards');
+  const scoreEl = document.getElementById('score');
+  const levelEl = document.getElementById('level');
+  const messageEl = document.getElementById('message');
+  const tipBox = document.getElementById('tipBox');
+  let current = 0;
+  let score = 0;
+  let dragged = null;
+
+  const labels = ["source", "producer", "herbivore", "predator"];
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function makeZone(name) {
+    const z = document.createElement('div');
+    z.className = 'zone';
+    z.dataset.role = name;
+    z.textContent = name.toUpperCase();
+    z.addEventListener('dragover', e => e.preventDefault());
+    z.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragged) return;
+      const existing = z.querySelector('.card');
+      if (existing) cardsEl.appendChild(existing);
+      z.textContent = '';
+      z.appendChild(dragged);
+    });
+    return z;
+  }
+
+  function makeCard(text) {
+    const c = document.createElement('div');
+    c.className = 'card';
+    c.draggable = true;
+    c.textContent = text;
+    c.dataset.text = text;
+    c.addEventListener('dragstart', () => dragged = c);
+    return c;
+  }
+
+  function renderLevel() {
+    zonesEl.innerHTML = '';
+    cardsEl.innerHTML = '';
+    labels.forEach(l => zonesEl.appendChild(makeZone(l)));
+    const items = ecosystems[current].items;
+    shuffle(Object.values(items)).forEach(item => cardsEl.appendChild(makeCard(item)));
+    cardsEl.addEventListener('dragover', e => e.preventDefault());
+    cardsEl.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragged) cardsEl.appendChild(dragged);
+    });
+    tipBox.textContent = ecosystems[current].tip;
+    messageEl.textContent = 'Drag each card into the correct stage.';
+    levelEl.textContent = current + 1;
+  }
+
+  function check() {
+    const items = ecosystems[current].items;
+    let correct = true;
+    [...zonesEl.children].forEach(zone => {
+      const card = zone.querySelector('.card');
+      if (!card || card.dataset.text !== items[zone.dataset.role]) correct = false;
+    });
+    if (correct) {
+      score += 10;
+      messageEl.textContent = 'Correct chain. Energy moved in the right order.';
+      scoreEl.textContent = score;
+      current = (current + 1) % ecosystems.length;
+      setTimeout(renderLevel, 900);
+    } else {
+      score = Math.max(0, score - 2);
+      scoreEl.textContent = score;
+      messageEl.textContent = 'One or more stages are incorrect. Think about who makes food and who eats whom.';
+    }
+  }
+
+  document.getElementById('checkBtn').addEventListener('click', check);
+  document.getElementById('newBtn').addEventListener('click', () => {
+    current = (current + 1) % ecosystems.length;
+    renderLevel();
+  });
+
+  renderLevel();
+})();
+</script>
+</body>
+</html>
