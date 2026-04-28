@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Decimal Drift Race</title>
+<style>
+  :root{--bg:#111827;--panel:#1f2937;--track:#0f172a;--text:#f9fafb;--muted:#d1d5db;--accent:#f59e0b}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,#030712,var(--bg));color:var(--text);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
+  .app{width:min(980px,100%);background:rgba(31,41,55,0.97);border:1px solid #374151;border-radius:18px;overflow:hidden}
+  header{padding:18px 22px;border-bottom:1px solid #374151}
+  h1{margin:0 0 6px}.sub{color:var(--muted)}
+  .body{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;padding:20px}
+  .panel{background:#111827;border-radius:16px;padding:16px}
+  canvas{width:100%;background:var(--track);border-radius:12px;border:1px solid #374151}
+  .problem{font-size:2rem;margin:6px 0 16px;color:var(--accent)}
+  .choices{display:grid;gap:10px}
+  button{border:none;border-radius:12px;padding:14px;background:#374151;color:#fff;cursor:pointer;font-size:1rem}
+  button:hover{background:#4b5563}
+  .hud{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);margin-bottom:12px}
+  #message{margin-top:12px;min-height:52px;color:var(--muted);background:#0b1220;padding:12px;border-radius:12px}
+  .restart{background:#f59e0b;color:#111827;font-weight:bold;margin-top:12px}
+  @media (max-width:780px){.body{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Decimal Drift Race</h1>
+    <div class="sub">Solve decimal arithmetic. Correct answers push your car toward the finish line.</div>
+  </header>
+  <div class="body">
+    <div class="panel">
+      <canvas id="track" width="560" height="320"></canvas>
+    </div>
+    <div class="panel">
+      <div class="hud">
+        <div>Score: <strong id="score">0</strong></div>
+        <div>Fuel: <strong id="fuel">4</strong></div>
+        <div>Question: <strong id="qnum">1</strong>/10</div>
+      </div>
+      <div class="problem" id="problem">0.0 + 0.0</div>
+      <div class="choices" id="choices"></div>
+      <div id="message">Choose the correct answer to race forward.</div>
+      <button class="restart" id="restartBtn">Restart</button>
+    </div>
+  </div>
+</div>
+<script>
+const problems = [
+  { q:'1.2 + 0.8', a:'2.0', c:['2.0','1.10','2.8'] },
+  { q:'4.5 - 1.7', a:'2.8', c:['2.8','3.8','2.6'] },
+  { q:'0.6 + 0.35', a:'0.95', c:['0.95','0.85','0.41'] },
+  { q:'3.2 + 1.9', a:'5.1', c:['4.11','5.1','5.9'] },
+  { q:'7.0 - 0.4', a:'6.6', c:['6.4','6.6','7.4'] },
+  { q:'2.25 + 0.75', a:'3.0', c:['3.0','2.90','2.1'] },
+  { q:'5.5 - 2.2', a:'3.3', c:['3.7','3.3','2.3'] },
+  { q:'1.05 + 0.5', a:'1.55', c:['1.55','1.5','1.10'] },
+  { q:'9.4 - 3.8', a:'5.6', c:['5.2','6.6','5.6'] },
+  { q:'0.9 + 2.4', a:'3.3', c:['3.3','2.15','4.3'] }
+];
+const canvas = document.getElementById('track');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const fuelEl = document.getElementById('fuel');
+const qnumEl = document.getElementById('qnum');
+const problemEl = document.getElementById('problem');
+const choicesEl = document.getElementById('choices');
+const messageEl = document.getElementById('message');
+const restartBtn = document.getElementById('restartBtn');
+let score = 0, fuel = 4, idx = 0, progress = 30, locked = false;
+
+function drawTrack() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = '#374151';
+  ctx.fillRect(20,130,520,70);
+  for (let x = 40; x < 520; x += 40) {
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.setLineDash([14, 16]);
+    ctx.beginPath();
+    ctx.moveTo(x,165); ctx.lineTo(x+18,165); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#10b981';
+  ctx.fillRect(500,110,20,110);
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = '14px Arial';
+  ctx.fillText('FINISH', 480, 95);
+  ctx.fillStyle = '#f59e0b';
+  ctx.fillRect(progress, 145, 65, 35);
+  ctx.fillStyle = '#111827';
+  ctx.fillRect(progress+10, 176, 12, 12);
+  ctx.fillRect(progress+43, 176, 12, 12);
+  ctx.fillStyle = '#93c5fd';
+  ctx.fillRect(progress+42, 151, 16, 15);
+}
+
+function loadProblem() {
+  const p = problems[idx];
+  problemEl.textContent = p.q;
+  qnumEl.textContent = idx + 1;
+  choicesEl.innerHTML = '';
+  p.c.sort(() => Math.random() - 0.5).forEach(choice => {
+    const btn = document.createElement('button');
+    btn.textContent = choice;
+    btn.addEventListener('click', () => submit(choice));
+    choicesEl.appendChild(btn);
+  });
+}
+
+function submit(choice) {
+  if (locked) return;
+  locked = true;
+  const p = problems[idx];
+  if (choice === p.a) {
+    score += 10;
+    progress += 44;
+    messageEl.innerHTML = '<span style="color:#86efac">Correct.</span> Your car drifts forward.';
+  } else {
+    fuel -= 1;
+    progress = Math.max(30, progress - 10);
+    messageEl.innerHTML = `<span style="color:#fca5a5">Wrong.</span> Correct answer: ${p.a}.`;
+  }
+  scoreEl.textContent = score;
+  fuelEl.textContent = fuel;
+  drawTrack();
+
+  setTimeout(() => {
+    idx += 1;
+    locked = false;
+    if (fuel <= 0 || idx >= problems.length || progress >= 470) {
+      messageEl.textContent = `Race finished. Score: ${score}. ${progress >= 470 ? 'You reached the finish line.' : 'Restart to try again.'}`;
+      choicesEl.innerHTML = '';
+      drawTrack();
+      return;
+    }
+    loadProblem();
+  }, 850);
+}
+
+restartBtn.addEventListener('click', () => {
+  score = 0; fuel = 4; idx = 0; progress = 30; locked = false;
+  scoreEl.textContent = score; fuelEl.textContent = fuel; messageEl.textContent = 'Choose the correct answer to race forward.';
+  drawTrack(); loadProblem();
+});
+
+drawTrack();
+loadProblem();
+</script>
+</body>
+</html>
