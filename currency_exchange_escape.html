@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Currency Exchange Escape</title>
+<style>
+  :root{--bg:#0c1222;--panel:#141b34;--card:#1f2a4c;--text:#f8fafc;--muted:#cbd5e1;--accent:#22c55e}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,#020617,var(--bg));color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .app{width:min(960px,100%);background:rgba(20,27,52,0.97);border:1px solid #334155;border-radius:18px;overflow:hidden}
+  header{padding:18px 22px;border-bottom:1px solid #334155}
+  h1{margin:0 0 6px}.sub{color:var(--muted)}
+  .body{display:grid;grid-template-columns:1.1fr 1fr;gap:18px;padding:20px}
+  .panel{background:#0f172a;border-radius:16px;padding:18px}
+  .maze{position:relative;height:350px;border-radius:12px;background:linear-gradient(180deg,#111827,#0b1220);overflow:hidden;border:1px solid #334155}
+  .runner{position:absolute;left:20px;top:150px;width:28px;height:28px;border-radius:8px;background:#22c55e;transition:left 0.35s ease}
+  .gate{position:absolute;right:18px;top:135px;width:34px;height:58px;border:3px solid #f8fafc;border-radius:10px}
+  .lane{position:absolute;left:0;right:0;top:160px;height:8px;background:#475569}
+  .question{font-size:1.15rem;line-height:1.5;color:var(--muted)}
+  .choices{display:grid;gap:10px;margin-top:14px}
+  button{border:none;border-radius:12px;padding:14px;background:#334155;color:#fff;cursor:pointer;font-size:1rem}
+  button:hover{background:#475569}
+  .restart{background:#22c55e;color:#052e16;font-weight:bold;margin-top:12px}
+  .hud{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);margin-bottom:12px}
+  #message{margin-top:12px;min-height:56px;padding:12px;background:#111827;border-radius:12px;color:var(--muted)}
+  @media (max-width:800px){.body{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Currency Exchange Escape</h1>
+    <div class="sub">Choose the best exchange result after rate and fee. This trains quick commercial arithmetic.</div>
+  </header>
+  <div class="body">
+    <div class="panel">
+      <div class="maze">
+        <div class="lane"></div>
+        <div class="runner" id="runner"></div>
+        <div class="gate"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="hud">
+        <div>Score: <strong id="score">0</strong></div>
+        <div>Lives: <strong id="lives">3</strong></div>
+        <div>Round: <strong id="round">1</strong>/8</div>
+      </div>
+      <div class="question" id="question"></div>
+      <div class="choices" id="choices"></div>
+      <div id="message">Pick the correct final amount after conversion.</div>
+      <button class="restart" id="restartBtn">Restart</button>
+    </div>
+  </div>
+</div>
+<script>
+const rounds = [
+  { question:'Convert $100 at a rate of 0.90. Then subtract a $5 fee.', answer:'85', choices:['85','90','95'] },
+  { question:'Convert £200 at a rate of 1.20. Then subtract a £10 fee.', answer:'230', choices:['220','230','240'] },
+  { question:'Convert €50 at a rate of 1.10. Then subtract a €2 fee.', answer:'53', choices:['53','55','48'] },
+  { question:'Convert $80 at a rate of 1.50. Then subtract a $8 fee.', answer:'112', choices:['112','120','102'] },
+  { question:'Convert £120 at a rate of 1.30. Then subtract a £6 fee.', answer:'150', choices:['150','156','144'] },
+  { question:'Convert €90 at a rate of 0.80. Then subtract a €4 fee.', answer:'68', choices:['68','72','76'] },
+  { question:'Convert $150 at a rate of 0.70. Then subtract a $3 fee.', answer:'102', choices:['102','105','97'] },
+  { question:'Convert £75 at a rate of 1.40. Then subtract a £5 fee.', answer:'100', choices:['95','100','105'] }
+];
+const runner = document.getElementById('runner');
+const questionEl = document.getElementById('question');
+const choicesEl = document.getElementById('choices');
+const scoreEl = document.getElementById('score');
+const livesEl = document.getElementById('lives');
+const roundEl = document.getElementById('round');
+const messageEl = document.getElementById('message');
+const restartBtn = document.getElementById('restartBtn');
+let score = 0, lives = 3, idx = 0, position = 20;
+
+function renderRound() {
+  const r = rounds[idx];
+  roundEl.textContent = idx + 1;
+  questionEl.textContent = r.question;
+  choicesEl.innerHTML = '';
+  r.choices.sort(() => Math.random() - 0.5).forEach(choice => {
+    const btn = document.createElement('button');
+    btn.textContent = choice;
+    btn.addEventListener('click', () => answer(choice));
+    choicesEl.appendChild(btn);
+  });
+}
+
+function answer(choice) {
+  const r = rounds[idx];
+  if (choice === r.answer) {
+    score += 10;
+    position += 55;
+    messageEl.innerHTML = '<span style="color:#86efac">Correct.</span> Good exchange math.';
+  } else {
+    lives -= 1;
+    position = Math.max(20, position - 18);
+    messageEl.innerHTML = `<span style="color:#fca5a5">Wrong.</span> Correct answer: ${r.answer}.`;
+  }
+  runner.style.left = position + 'px';
+  scoreEl.textContent = score;
+  livesEl.textContent = lives;
+  idx += 1;
+
+  setTimeout(() => {
+    if (lives <= 0 || idx >= rounds.length || position >= 405) {
+      choicesEl.innerHTML = '';
+      messageEl.textContent = `Finished. Score: ${score}. ${position >= 405 ? 'You escaped the exchange maze.' : 'Restart to play again.'}`;
+      return;
+    }
+    renderRound();
+  }, 800);
+}
+
+restartBtn.addEventListener('click', () => {
+  score = 0; lives = 3; idx = 0; position = 20;
+  runner.style.left = position + 'px';
+  scoreEl.textContent = score; livesEl.textContent = lives; messageEl.textContent = 'Pick the correct final amount after conversion.';
+  renderRound();
+});
+
+renderRound();
+</script>
+</body>
+</html>
