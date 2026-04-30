@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Spelling Bee Bloom</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,#ecfccb,#bbf7d0);color:#14532d;display:flex;justify-content:center;align-items:center;min-height:100vh}
+.wrap{width:min(920px,95vw);background:rgba(255,255,255,.92);border-radius:18px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.15)}
+h1,p{text-align:center}.hud{display:flex;justify-content:space-around;gap:12px;flex-wrap:wrap;margin-bottom:14px}.pill{background:#dcfce7;padding:10px 14px;border-radius:999px;font-weight:700}
+#garden{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.flower{background:#fef3c7;border-radius:14px;min-height:90px;display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:inset 0 -8px 0 rgba(0,0,0,.08)}
+input{width:100%;padding:12px;border-radius:10px;border:2px solid #86efac;font-size:18px;box-sizing:border-box}
+button{margin-top:12px;padding:10px 18px;border:none;border-radius:10px;background:#22c55e;color:white;font-weight:700;cursor:pointer}
+#prompt,#msg{text-align:center;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Spelling Bee Bloom</h1>
+  <p>Spell the word correctly to grow flowers in the garden.</p>
+  <div class="hud">
+    <div class="pill">Score: <span id="score">0</span></div>
+    <div class="pill">Lives: <span id="lives">3</span></div>
+    <div class="pill">Garden Filled: <span id="filled">0</span>/10</div>
+  </div>
+  <div id="garden"></div>
+  <div id="prompt"></div>
+  <input id="answer" placeholder="Type the correct spelling" autocomplete="off" />
+  <div style="text-align:center"><button id="submit">Submit</button> <button id="restart">Restart</button></div>
+  <div id="msg">Listen in your head to the sounds and watch for tricky letter pairs.</div>
+</div>
+<script>
+const words=[
+  ['separate','Which word means to divide or keep apart?'],
+  ['because','Which word gives a reason?'],
+  ['calendar','Which word names the chart of days and months?'],
+  ['beautiful','Which word means very pretty?'],
+  ['science','Which word is the study of how the world works?'],
+  ['adventure','Which word means an exciting journey?'],
+  ['library','Which word is a place full of books?'],
+  ['knowledge','Which word means what you know and understand?'],
+  ['friendship','Which word means the bond between friends?'],
+  ['important','Which word means having great value?']
+];
+const garden=document.getElementById('garden'), promptEl=document.getElementById('prompt'), ans=document.getElementById('answer'), msg=document.getElementById('msg');
+const scoreEl=document.getElementById('score'), livesEl=document.getElementById('lives'), filledEl=document.getElementById('filled');
+let remaining=[], current=null, score=0,lives=3,filled=0;
+function makeGarden(){garden.innerHTML=''; for(let i=0;i<10;i++){const d=document.createElement('div'); d.className='flower'; d.textContent='🌱'; garden.appendChild(d);}}
+function pick(){ if(remaining.length===0){msg.textContent='Garden complete. Restart to play again.'; promptEl.textContent=''; return;} current=remaining.splice(Math.floor(Math.random()*remaining.length),1)[0]; promptEl.textContent=current[1]; ans.value=''; ans.focus();}
+function bloom(){const spots=[...document.querySelectorAll('.flower')]; spots[filled].textContent='🌸'; filled++;}
+function update(){scoreEl.textContent=score;livesEl.textContent=lives;filledEl.textContent=filled;}
+function submit(){ if(lives<=0||!current)return; if(ans.value.trim().toLowerCase()===current[0]){score+=10; bloom(); msg.textContent=`Correct: ${current[0]}`; pick();} else {lives--; msg.textContent=`Incorrect. Correct spelling: ${current[0]}`; if(lives<=0){promptEl.textContent='Game over.'; current=null;}} update(); }
+function start(){remaining=[...words]; score=0;lives=3;filled=0; makeGarden(); pick(); update(); msg.textContent='Spell the word correctly to grow flowers in the garden.';}
+document.getElementById('submit').onclick=submit; document.getElementById('restart').onclick=start; ans.addEventListener('keydown',e=>{if(e.key==='Enter')submit();}); start();
+</script>
+</body>
+</html>
