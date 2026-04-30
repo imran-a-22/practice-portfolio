@@ -1,1 +1,1 @@
-This repository is for programs to show my personal, private portfolio of work, as well as a way for me to track my progress and improvement overtime.
+This repository is for programs to show my personal, private portfolio of work, as evidence in my Innovator Founder Visa application how I became a self taught programmer and then a software engineer. It is also a way for me to track my progress and improvement overtime. An overwhelming amount of programs are about gaming + education (or ed-tech) themes, because that is the space in which I am building my startup.
