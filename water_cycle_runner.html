@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Water Cycle Runner</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,#38bdf8,#0f766e);color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.game{width:min(980px,100%);background:rgba(0,0,0,.38);border-radius:24px;padding:24px;box-shadow:0 22px 60px rgba(0,0,0,.35)}h1{margin:0 0 8px;font-size:36px}.intro{color:#e0f2fe;line-height:1.5}.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}.stat{background:rgba(255,255,255,.13);border-radius:14px;padding:12px;text-align:center}.stat strong{display:block;font-size:24px;color:#fde047}.world{height:330px;background:linear-gradient(#7dd3fc 0 55%,#22c55e 55% 72%,#2563eb 72% 100%);border-radius:18px;position:relative;overflow:hidden;border:3px solid rgba(255,255,255,.25)}.sun{position:absolute;right:45px;top:30px;font-size:64px}.cloud{position:absolute;left:40%;top:50px;font-size:76px}.mountain{position:absolute;left:60px;bottom:88px;font-size:86px}.water{position:absolute;left:45%;bottom:18px;font-size:70px;transition:all .3s}.track{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}.stage{border:0;border-radius:16px;padding:16px;font-weight:900;cursor:pointer;background:#e0f2fe;color:#0f172a}.stage:hover{transform:translateY(-1px)}.panel{margin-top:14px;background:rgba(255,255,255,.12);border-radius:16px;padding:16px}.feedback{min-height:76px;background:rgba(0,0,0,.28);border-radius:14px;padding:14px;line-height:1.5}.controls button{margin-top:10px;margin-right:8px;border:0;border-radius:14px;padding:12px 16px;font-weight:900;cursor:pointer}.next{background:#22c55e;color:#111827}.reset{background:#ef4444;color:white}.lesson{margin-top:16px;background:rgba(255,255,255,.10);border-radius:14px;padding:14px;line-height:1.5}@media(max-width:700px){.hud,.track{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="game"><h1>Water Cycle Runner</h1><p class="intro">Move the water droplet through the correct cycle: evaporation, condensation, precipitation, and collection.</p>
+<div class="hud"><div class="stat">Score<strong id="score">0</strong></div><div class="stat">Lives<strong id="lives">3</strong></div><div class="stat">Step<strong id="step">1</strong></div><div class="stat">Current<strong id="current">Ocean</strong></div></div>
+<div class="world"><div class="sun">☀️</div><div class="cloud">☁️</div><div class="mountain">⛰️</div><div class="water" id="drop">💧</div></div>
+<div class="track" id="stages"></div><div class="panel"><div class="feedback" id="feedback">Choose the next stage of the water cycle.</div><div class="controls"><button class="next" onclick="nextRound()">Next Round</button><button class="reset" onclick="resetGame()">Reset</button></div></div>
+<div class="lesson"><strong>Mini lesson:</strong> Heat causes evaporation. Water vapour cools and condenses into clouds. Water falls as precipitation. It collects in rivers, lakes, oceans, and ground water.</div></div>
+<script>
+const cycle=["Evaporation","Condensation","Precipitation","Collection"];
+const positions={Evaporation:[60,150],Condensation:[40,40],Precipitation:[44,120],Collection:[45,238]};
+let expected=0,scoreVal=0,livesVal=3,round=0,answered=false;
+function render(){answered=false;score.textContent=scoreVal;lives.textContent=livesVal;step.textContent=expected+1;current.textContent=expected===0?'Ocean':cycle[(expected+3)%4];feedback.textContent='What happens next?';stages.innerHTML='';cycle.forEach(name=>{let b=document.createElement('button');b.className='stage';b.textContent=name;b.onclick=()=>choose(name);stages.appendChild(b);});moveDrop(cycle[(expected+3)%4]);}
+function moveDrop(stageName){let p=positions[stageName]||[45,238];drop.style.left=p[0]+'%';drop.style.top=p[1]+'px';}
+function choose(name){if(answered||livesVal<=0)return;answered=true;const ans=cycle[expected];moveDrop(name);if(name===ans){scoreVal+=10;feedback.innerHTML='<strong>Correct.</strong> '+explain(ans);expected=(expected+1)%4;}else{livesVal--;feedback.innerHTML='<strong>Incorrect.</strong> The correct next stage is '+ans+'. '+explain(ans);}score.textContent=scoreVal;lives.textContent=livesVal;if(livesVal<=0)feedback.innerHTML+='<br><strong>The cycle broke.</strong> Reset to try again.';}
+function explain(x){return {Evaporation:'The Sun heats water and turns it into water vapour.',Condensation:'Water vapour cools and forms clouds.',Precipitation:'Water falls from clouds as rain, snow, sleet, or hail.',Collection:'Water gathers in oceans, lakes, rivers, or underground.'}[x];}
+function nextRound(){if(livesVal<=0)return;round++;render();}
+function resetGame(){expected=0;scoreVal=0;livesVal=3;round=0;render();}
+render();
+</script>
+</body>
+</html>
