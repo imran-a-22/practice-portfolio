@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Supply Chain Sorter</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#292524,#78716c,#f59e0b);color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.game{width:min(1050px,100%);background:rgba(0,0,0,.42);border-radius:24px;padding:24px;box-shadow:0 22px 60px rgba(0,0,0,.38)}h1{margin:0 0 8px;font-size:36px}.intro{color:#ffedd5;line-height:1.5}.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}.stat{background:rgba(255,255,255,.12);border-radius:14px;padding:12px;text-align:center}.stat strong{display:block;color:#fde047;font-size:24px}.board{display:grid;grid-template-columns:1fr .85fr;gap:16px}.lane{background:#fff7ed;color:#1c1917;border-radius:18px;padding:18px}.cards{display:grid;gap:10px}.card{background:#fbbf24;border:3px solid #92400e;border-radius:14px;padding:14px;font-weight:900;cursor:grab;display:flex;justify-content:space-between;align-items:center}.card small{font-weight:700}.panel{background:rgba(255,255,255,.12);border-radius:18px;padding:18px}.choices{display:grid;gap:10px;margin-top:10px}button{border:0;border-radius:14px;padding:13px;font-weight:900;cursor:pointer;background:#fde047;color:#111827}button:hover{transform:translateY(-1px)}.green{background:#22c55e}.red{background:#ef4444;color:white}.feedback{min-height:90px;background:rgba(0,0,0,.28);border-radius:14px;padding:14px;margin-top:12px;line-height:1.5}.lesson{margin-top:16px;background:rgba(255,255,255,.10);border-radius:14px;padding:14px;line-height:1.5}@media(max-width:850px){.board{grid-template-columns:1fr}.hud{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="game"><h1>Supply Chain Sorter</h1><p class="intro">Drag the supply chain steps into the correct order, then solve a bottleneck decision. Learn how goods move from raw materials to customers.</p>
+<div class="hud"><div class="stat">Score<strong id="score">0</strong></div><div class="stat">Mistakes<strong id="mistakes">0</strong></div><div class="stat">Round<strong id="round">1</strong></div><div class="stat">Rank<strong id="rank">Planner</strong></div></div>
+<div class="board"><div class="lane"><h2>Arrange the flow</h2><div class="cards" id="cards"></div><button class="green" onclick="checkOrder()">Check Order</button><button class="red" onclick="shuffleCards()">Shuffle</button></div><div class="panel"><h2 id="scenarioTitle">Bottleneck Challenge</h2><p id="scenario"></p><div class="choices" id="choices"></div><div class="feedback" id="feedback">Sort the chain first, then solve the scenario.</div><button class="green" onclick="nextRound()">Next Round</button><button class="red" onclick="resetGame()">Reset</button></div></div>
+<div class="lesson"><strong>Mini lesson:</strong> A supply chain is the path a product follows from supplier to factory to warehouse to shop to customer. A bottleneck is the slowest point that limits the whole system.</div></div>
+<script>
+const correct=['Supplier','Factory','Warehouse','Retailer','Customer'];
+const scenarios=[
+{q:'The factory can make 500 units, but the warehouse can only store 200. What is the bottleneck?',ans:'Warehouse capacity',choices:['Factory workers','Warehouse capacity','Customer demand','Retail displays'],ex:'The warehouse limits the flow because it can hold fewer units than the factory can produce.'},
+{q:'A shop sells out quickly, but deliveries arrive only once a month. What should improve?',ans:'Delivery frequency',choices:['Delivery frequency','Package colour','Website font','Factory logo'],ex:'More frequent deliveries help keep shelves stocked.'},
+{q:'Raw materials arrive late, so the factory waits. What part is causing delay?',ans:'Supplier reliability',choices:['Supplier reliability','Retail price tags','Customer reviews','Warehouse lighting'],ex:'If materials arrive late, the supplier stage is causing the delay.'}
+];
+let scoreVal=0,mistakesVal=0,roundVal=0,dragIndex=null;
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function renderCards(list=shuffle(correct)){cards.innerHTML='';list.forEach((name,i)=>{let d=document.createElement('div');d.className='card';d.draggable=true;d.innerHTML='<span>'+name+'</span><small>drag</small>';d.ondragstart=()=>dragIndex=i;d.ondragover=e=>e.preventDefault();d.ondrop=()=>{let arr=[...cards.children].map(x=>x.querySelector('span').textContent);let item=arr.splice(dragIndex,1)[0];arr.splice(i,0,item);renderCards(arr)};cards.appendChild(d);});}
+function renderScenario(){const s=scenarios[roundVal%scenarios.length];scenario.textContent=s.q;choices.innerHTML='';s.choices.forEach(c=>{let b=document.createElement('button');b.textContent=c;b.onclick=()=>choose(c);choices.appendChild(b);});updateHud();}
+function updateHud(){score.textContent=scoreVal;mistakes.textContent=mistakesVal;round.textContent=roundVal+1;rank.textContent=scoreVal>=60?'Operations Lead':scoreVal>=30?'Coordinator':'Planner';}
+function checkOrder(){const arr=[...cards.children].map(x=>x.querySelector('span').textContent);if(arr.join('|')===correct.join('|')){scoreVal+=15;feedback.innerHTML='<strong>Correct flow.</strong> Supplier → Factory → Warehouse → Retailer → Customer.';}else{mistakesVal++;feedback.innerHTML='<strong>Not yet.</strong> Correct order: Supplier → Factory → Warehouse → Retailer → Customer.';}updateHud();}
+function choose(c){const s=scenarios[roundVal%scenarios.length];if(c===s.ans){scoreVal+=10;feedback.innerHTML='<strong>Correct.</strong> '+s.ex;}else{mistakesVal++;feedback.innerHTML='<strong>Incorrect.</strong> Correct answer: '+s.ans+'. '+s.ex;}updateHud();}
+function shuffleCards(){renderCards(shuffle(correct));feedback.textContent='Cards shuffled. Drag them back into the correct order.';}
+function nextRound(){roundVal++;shuffleCards();renderScenario();}
+function resetGame(){scoreVal=0;mistakesVal=0;roundVal=0;renderCards();renderScenario();feedback.textContent='Sort the chain first, then solve the scenario.';}
+resetGame();
+</script>
+</body>
+</html>
