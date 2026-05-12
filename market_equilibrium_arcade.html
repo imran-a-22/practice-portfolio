@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Market Equilibrium Arcade</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #111827, #2563eb);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.game {
+  width: min(980px, 100%);
+  background: rgba(0,0,0,.42);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.38);
+}
+h1 { margin: 0 0 8px; font-size: 36px; }
+.intro { color: rgba(255,255,255,.86); line-height: 1.5; }
+.hud {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+.stat {
+  background: rgba(255,255,255,.13);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 14px;
+  padding: 12px;
+  text-align: center;
+}
+.stat strong { display: block; color: #fde047; font-size: 24px; }
+.layout {
+  display: grid;
+  grid-template-columns: 1fr .9fr;
+  gap: 16px;
+}
+.visual {
+  background: rgba(255,255,255,.92);
+  color: #111827;
+  border-radius: 18px;
+  padding: 18px;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.bigicon {
+  font-size: 96px;
+  text-align: center;
+  margin: 10px 0;
+}
+.diagram {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+.tile {
+  background: #f8fafc;
+  border: 2px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 14px;
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: 800;
+}
+.panel {
+  background: rgba(255,255,255,.13);
+  border-radius: 18px;
+  padding: 18px;
+}
+.choices { display: grid; gap: 10px; margin-top: 12px; }
+button {
+  border: 0;
+  border-radius: 14px;
+  padding: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  background: #fde047;
+  color: #111827;
+}
+button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.green { background: #22c55e; color: white; margin-top: 10px; }
+.red { background: #ef4444; color: white; margin-top: 10px; }
+.feedback {
+  background: rgba(0,0,0,.25);
+  border-radius: 14px;
+  padding: 14px;
+  min-height: 82px;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.lesson {
+  margin-top: 16px;
+  background: rgba(255,255,255,.11);
+  border-radius: 14px;
+  padding: 14px;
+  line-height: 1.5;
+}
+@media(max-width:800px) {
+  .layout { grid-template-columns: 1fr; }
+  .hud { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="game">
+  <h1>Market Equilibrium Arcade</h1>
+  <p class="intro">Solve microeconomics puzzles by identifying shortages, surpluses, and equilibrium prices.</p>
+  <div class="hud">
+    <div class="stat">Score<strong id="score">0</strong></div>
+    <div class="stat">Lives<strong id="lives">3</strong></div>
+    <div class="stat">Market<strong id="roundNo">1</strong></div>
+    <div class="stat">Rank<strong id="rank">Starter</strong></div>
+  </div>
+  <div class="layout">
+    <div class="visual">
+      <div>
+        <h2 id="visualTitle">Challenge</h2>
+        <div class="bigicon" id="icon">📈</div>
+        <p id="scenario"></p>
+      </div>
+      <div class="diagram" id="diagram"></div>
+    </div>
+    <div class="panel">
+      <h2 id="question"></h2>
+      <div class="choices" id="choices"></div>
+      <div class="feedback" id="feedback">Choose an answer.</div>
+      <button class="green" onclick="nextRound()">Next</button>
+      <button class="red" onclick="resetGame()">Reset</button>
+    </div>
+  </div>
+  <div class="lesson"><strong>Mini lesson:</strong> Equilibrium is where quantity supplied and quantity demanded are balanced. A price above equilibrium tends to create surplus; a price below equilibrium tends to create shortage.</div>
+</div>
+<script>
+const rounds = [{"title": "Lemonade Market", "icon": "\ud83c\udf4b", "scenario": "At \u00a32, students want 80 cups but sellers bring only 40 cups.", "tiles": ["Price: \u00a32", "Demand: 80", "Supply: 40", "Demand > Supply"], "question": "What market condition exists?", "choices": ["Shortage", "Surplus", "Equilibrium", "Inflation"], "answer": "Shortage", "explain": "Demand is greater than supply, so buyers want more than sellers provide."}, {"title": "Sneaker Market", "icon": "\ud83d\udc5f", "scenario": "At \u00a3120, shops supply 90 pairs but buyers only want 35 pairs.", "tiles": ["Price: \u00a3120", "Demand: 35", "Supply: 90", "Supply > Demand"], "question": "What is the likely result?", "choices": ["Surplus", "Shortage", "Perfect equilibrium", "No market"], "answer": "Surplus", "explain": "Supply is higher than demand, so unsold stock builds up."}, {"title": "Game Skin Market", "icon": "\ud83c\udfae", "scenario": "At \u00a35, buyers want 60 skins and sellers offer 60 skins.", "tiles": ["Price: \u00a35", "Demand: 60", "Supply: 60", "Balanced"], "question": "What is this price called?", "choices": ["Equilibrium price", "Penalty price", "Black market price", "Tax price"], "answer": "Equilibrium price", "explain": "Quantity demanded equals quantity supplied."}, {"title": "Coffee Market", "icon": "\u2615", "scenario": "A popular influencer recommends coffee. More people want coffee at every price.", "tiles": ["Demand shifts right", "Supply unchanged", "More buyers", "Higher pressure on price"], "question": "What will usually happen to equilibrium price?", "choices": ["It rises", "It falls to zero", "It disappears", "It must stay the same"], "answer": "It rises", "explain": "Higher demand usually pushes the equilibrium price up if supply does not also increase."}];
+let score = 0, lives = 3, index = 0, answered = false;
+
+function shuffle(arr) {
+  return [...arr].sort(() => Math.random() - 0.5);
+}
+
+function updateHud() {
+  document.getElementById("score").textContent = score;
+  document.getElementById("lives").textContent = lives;
+  document.getElementById("roundNo").textContent = (index % rounds.length) + 1;
+  document.getElementById("rank").textContent = score >= 50 ? "Master" : score >= 30 ? "Skilled" : score >= 10 ? "Learner" : "Starter";
+}
+
+function render() {
+  answered = false;
+  const r = rounds[index % rounds.length];
+  document.getElementById("visualTitle").textContent = r.title;
+  document.getElementById("icon").textContent = r.icon || "📈";
+  document.getElementById("scenario").textContent = r.scenario;
+  document.getElementById("question").textContent = r.question;
+  document.getElementById("feedback").textContent = "Choose the best answer.";
+  const diagram = document.getElementById("diagram");
+  diagram.innerHTML = "";
+  (r.tiles || []).forEach(t => {
+    const div = document.createElement("div");
+    div.className = "tile";
+    div.textContent = t;
+    diagram.appendChild(div);
+  });
+  const choiceBox = document.getElementById("choices");
+  choiceBox.innerHTML = "";
+  shuffle(r.choices).forEach(choice => {
+    const btn = document.createElement("button");
+    btn.textContent = choice;
+    btn.onclick = () => choose(choice);
+    choiceBox.appendChild(btn);
+  });
+  updateHud();
+}
+
+function choose(choice) {
+  if (answered || lives <= 0) return;
+  answered = true;
+  const r = rounds[index % rounds.length];
+  if (choice === r.answer) {
+    score += 10;
+    document.getElementById("feedback").innerHTML = "<strong>Correct.</strong> " + r.explain;
+  } else {
+    lives--;
+    document.getElementById("feedback").innerHTML = "<strong>Incorrect.</strong> Correct answer: " + r.answer + ". " + r.explain;
+  }
+  updateHud();
+  if (lives <= 0) document.getElementById("feedback").innerHTML += "<br><strong>Game over.</strong> Reset to try again.";
+}
+
+function nextRound() {
+  if (lives <= 0) return;
+  index++;
+  render();
+}
+
+function resetGame() {
+  score = 0;
+  lives = 3;
+  index = 0;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
