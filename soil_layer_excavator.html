@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Soil Layer Excavator</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial Rounded MT Bold,Arial,sans-serif;background:#7ab56f;color:#2a190f}.site{max-width:1120px;margin:auto;padding:24px}.header{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}h1{margin:0;font-size:clamp(34px,5vw,58px);color:#3d240b;text-shadow:2px 2px #d7bc76}.layout{display:grid;grid-template-columns:420px 1fr;gap:20px}.pit{height:680px;border:8px solid #3d240b;border-radius:26px;overflow:hidden;box-shadow:10px 10px 0 #3d240b;background:#000}.layer{position:relative;display:grid;grid-template-columns:repeat(5,1fr);border-bottom:4px solid rgba(0,0,0,.25)}.cell{border:1px solid rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;min-height:34px}.cell:hover{outline:3px solid #fff}.covered{background:rgba(0,0,0,.35);color:transparent}.card{background:#fff7df;border:4px solid #3d240b;border-radius:24px;padding:18px;box-shadow:8px 8px 0 #3d240b}.hud{display:flex;gap:8px;flex-wrap:wrap}.tag{background:#3d240b;color:#fff7df;border-radius:999px;padding:8px 12px}.options{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}.options button,.btn{border:0;border-radius:14px;padding:12px;background:#5a3516;color:#fff7df;font-weight:bold;cursor:pointer}.options button:hover,.btn:hover{background:#8c5a24}.sample{font-size:24px;background:#ffe6aa;border:2px dashed #5a3516;border-radius:18px;padding:16px;min-height:98px}.log{height:210px;overflow:auto;background:#2a190f;color:#fff7df;border-radius:16px;padding:12px;font-family:Consolas,monospace}.legend{display:grid;gap:8px}.swatch{display:inline-block;width:26px;height:14px;border:1px solid #3d240b;margin-right:8px}@media(max-width:850px){.layout{grid-template-columns:1fr}.pit{height:590px}}
+</style>
+</head>
+<body>
+<div class="site">
+  <div class="header"><h1>Soil Layer Excavator</h1><div class="hud"><span class="tag">Score: <b id="score">0</b></span><span class="tag">Energy: <b id="energy">30</b></span><span class="tag">Finds: <b id="finds">0</b>/8</span></div></div>
+  <div class="layout">
+    <div class="pit" id="pit"></div>
+    <aside class="card">
+      <h2>Field notebook</h2><p>Click squares to dig. Identify the soil horizon from the sample clue.</p>
+      <div class="sample" id="sample">Choose a square to collect a sample.</div>
+      <div class="options" id="options"></div>
+      <h3>Layer guide</h3><div class="legend"><div><span class="swatch" style="background:#3d2b15"></span>O: organic leaf litter</div><div><span class="swatch" style="background:#6e4726"></span>A: topsoil with humus</div><div><span class="swatch" style="background:#b47a3c"></span>B: subsoil with minerals/clay</div><div><span class="swatch" style="background:#d1b06a"></span>C: weathered parent material</div><div><span class="swatch" style="background:#878787"></span>R: bedrock</div></div>
+      <h3>Log</h3><div class="log" id="log"></div><button class="btn" onclick="restart()">Restart dig</button>
+    </aside>
+  </div>
+</div>
+<script>
+const layers=[
+{name:'O horizon',key:'O',color:'#3d2b15',rows:3,clues:['dead leaves','twigs','dark organic matter']},
+{name:'A horizon',key:'A',color:'#6e4726',rows:4,clues:['humus-rich topsoil','many roots','earthworm tunnel']},
+{name:'B horizon',key:'B',color:'#b47a3c',rows:5,clues:['clay and iron minerals','fewer roots','orange-brown subsoil']},
+{name:'C horizon',key:'C',color:'#d1b06a',rows:4,clues:['broken rock pieces','weathered parent material','little organic matter']},
+{name:'R horizon',key:'R',color:'#878787',rows:4,clues:['solid bedrock','hard unweathered rock','no roots here']}
+];
+let score,energy,finds,current,dug;
+function restart(){score=0;energy=30;finds=0;current=null;dug=new Set();document.getElementById('log').innerHTML='';buildPit();note('Dig started. Use clues to classify layers.');render();}
+function buildPit(){const pit=document.getElementById('pit');pit.innerHTML='';let id=0;layers.forEach((l,li)=>{const div=document.createElement('div');div.className='layer';div.style.background=l.color;div.style.height=(l.rows*34)+'px';for(let r=0;r<l.rows;r++){for(let c=0;c<5;c++){const cell=document.createElement('button');cell.className='cell covered';cell.dataset.layer=li;cell.dataset.id=id++;cell.onclick=()=>dig(cell);cell.textContent=['🍂','🪱','🪨','💧','🌱'][Math.floor(Math.random()*5)];div.appendChild(cell)}}pit.appendChild(div);});}
+function dig(cell){if(energy<=0)return;const id=cell.dataset.id;if(dug.has(id)){note('Already dug. Choose a new square.');return;}dug.add(id);energy--;cell.classList.remove('covered');const l=layers[+cell.dataset.layer];const clue=l.clues[Math.floor(Math.random()*l.clues.length)];current={layer:l,clue};document.getElementById('sample').innerHTML='Sample clue: <b>'+clue+'</b><br>Which horizon is this?';document.getElementById('options').innerHTML=layers.map(x=>`<button onclick="answer('${x.key}')">${x.name}</button>`).join('');render();}
+function answer(k){if(!current)return;if(k===current.layer.key){score+=75;finds++;note('Correct: '+current.clue+' belongs to '+current.layer.name+'.');}else{score=Math.max(0,score-20);note('Not quite. '+current.clue+' indicates '+current.layer.name+'.');}current=null;if(finds>=8){note('Survey complete. You identified enough samples for a soil profile.');document.getElementById('options').innerHTML='<button onclick="restart()">Dig again</button>';}else if(energy<=0){note('Out of energy. Final score: '+score+'.');}document.getElementById('sample').textContent='Choose another square to collect a sample.';render();}
+function note(t){const log=document.getElementById('log');log.innerHTML='⛏ '+t+'<br>'+log.innerHTML;}
+function render(){document.getElementById('score').textContent=score;document.getElementById('energy').textContent=energy;document.getElementById('finds').textContent=finds;}
+restart();
+</script>
+</body>
+</html>
