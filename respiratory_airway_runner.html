@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Respiratory Airway Runner</title>
+<style>
+  :root{
+    --deep:#082f49;--blue:#0ea5e9;--mint:#99f6e4;--pink:#fb7185;--cream:#f8fafc;--dark:#0f172a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Verdana, Geneva, sans-serif;background:radial-gradient(circle at top left,#164e63,#082f49 55%,#020617);color:var(--cream);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px;}
+  .game{width:min(1180px,100%);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:28px;box-shadow:0 24px 80px rgba(0,0,0,.4);overflow:hidden;}
+  header{padding:24px;background:linear-gradient(135deg,rgba(14,165,233,.3),rgba(153,246,228,.14));display:grid;grid-template-columns:1.3fr .7fr;gap:16px;align-items:center;}
+  h1{margin:0 0 6px;font-size:clamp(28px,5vw,52px);letter-spacing:-2px;}
+  .subtitle{color:#dff8ff;line-height:1.5;margin:0;max-width:720px;}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .stat{background:rgba(2,6,23,.45);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:12px;text-align:center;}
+  .stat b{display:block;font-size:24px;color:var(--mint)}
+  main{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;padding:22px;}
+  .pathPanel,.quizPanel{background:rgba(15,23,42,.62);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:20px;}
+  .airway{height:430px;position:relative;border-radius:22px;background:linear-gradient(180deg,rgba(125,211,252,.18),rgba(251,113,133,.12));overflow:hidden;border:1px solid rgba(255,255,255,.12);}
+  .airway:before{content:"";position:absolute;inset:35px 25%;background:linear-gradient(180deg,rgba(153,246,228,.3),rgba(251,113,133,.22));border-radius:80px 80px 160px 160px;filter:blur(.2px);}
+  .tube{position:absolute;left:50%;top:20px;width:70px;height:360px;transform:translateX(-50%);border:10px solid rgba(153,246,228,.6);border-bottom:0;border-radius:60px 60px 0 0;}
+  .lung{position:absolute;bottom:40px;width:180px;height:210px;background:rgba(251,113,133,.5);border:3px solid rgba(255,255,255,.55);box-shadow:inset 0 0 30px rgba(255,255,255,.18);}
+  .lung.left{left:calc(50% - 198px);border-radius:90px 35px 95px 105px;}
+  .lung.right{right:calc(50% - 198px);border-radius:35px 90px 105px 95px;}
+  .bubble{position:absolute;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 30% 25%,white,#67e8f9 38%,#0284c7 72%);box-shadow:0 0 26px #67e8f9;left:calc(50% - 22px);top:16px;transition:all .55s ease;z-index:5;display:flex;align-items:center;justify-content:center;color:#052033;font-weight:900;}
+  .station{position:absolute;padding:8px 10px;background:rgba(2,6,23,.75);border:1px solid rgba(255,255,255,.18);border-radius:14px;font-size:12px;color:#e0f2fe;}
+  .s0{left:8%;top:25px}.s1{right:8%;top:94px}.s2{left:7%;top:160px}.s3{right:7%;top:228px}.s4{left:7%;bottom:82px}.s5{right:7%;bottom:28px}
+  .mission{background:linear-gradient(135deg,rgba(8,47,73,.9),rgba(15,23,42,.9));border-radius:20px;padding:18px;border:1px solid rgba(255,255,255,.13);}
+  .mission h2{margin:0 0 10px;font-size:22px;color:var(--mint)}
+  .mission p{line-height:1.55;color:#e5f9ff;}
+  .choices{display:grid;gap:12px;margin-top:16px;}
+  button{font:inherit;border:0;border-radius:16px;padding:13px 15px;cursor:pointer;font-weight:800;transition:.15s transform,.15s filter;}
+  button:hover{transform:translateY(-2px);filter:brightness(1.06)}
+  .choice{background:#f8fafc;color:#0f172a;text-align:left;border:2px solid transparent;}
+  .choice.correct{background:#99f6e4}.choice.wrong{background:#fecdd3}.choice:disabled{cursor:not-allowed;opacity:.85;transform:none}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+  .primary{background:linear-gradient(135deg,#22d3ee,#99f6e4);color:#082f49}.secondary{background:#1e293b;color:#e2e8f0;border:1px solid rgba(255,255,255,.14)}
+  .barWrap{margin-top:16px}.barLabel{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:#bae6fd}.bar{height:16px;background:#020617;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.18)}.fill{height:100%;width:70%;background:linear-gradient(90deg,#fb7185,#22d3ee,#99f6e4);transition:.3s width;}
+  .feedback{margin-top:14px;min-height:52px;line-height:1.45;color:#f8fafc;background:rgba(255,255,255,.07);border-radius:16px;padding:12px;border:1px solid rgba(255,255,255,.1)}
+  .badge{display:inline-block;background:rgba(153,246,228,.16);border:1px solid rgba(153,246,228,.4);padding:5px 9px;border-radius:999px;color:#ccfbf1;font-size:12px;margin-bottom:8px;}
+  @media(max-width:850px){header,main{grid-template-columns:1fr}.airway{height:360px}.lung{width:140px;height:170px}.lung.left{left:calc(50% - 155px)}.lung.right{right:calc(50% - 155px)}}
+</style>
+</head>
+<body>
+<div class="game">
+<header>
+  <div>
+    <h1>Respiratory Airway Runner</h1>
+    <p class="subtitle">Guide an oxygen bubble through the breathing system. Answer each checkpoint correctly to move from the nose to the bloodstream.</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><span>Score</span><b id="score">0</b></div>
+    <div class="stat"><span>Combo</span><b id="combo">0</b></div>
+    <div class="stat"><span>Checkpoint</span><b id="round">1/10</b></div>
+    <div class="stat"><span>O₂</span><b id="oxygen">70%</b></div>
+  </div>
+</header>
+<main>
+<section class="pathPanel">
+  <div class="airway" aria-label="Respiratory pathway diagram">
+    <div class="tube"></div><div class="lung left"></div><div class="lung right"></div>
+    <div class="bubble" id="bubble">O₂</div>
+    <div class="station s0">Nose / Mouth</div><div class="station s1">Trachea</div><div class="station s2">Bronchi</div><div class="station s3">Bronchioles</div><div class="station s4">Alveoli</div><div class="station s5">Bloodstream</div>
+  </div>
+  <div class="barWrap"><div class="barLabel"><span>Lung energy</span><span id="energyText">70%</span></div><div class="bar"><div class="fill" id="energyFill"></div></div></div>
+</section>
+<section class="quizPanel">
+  <div class="mission">
+    <span class="badge" id="tag">Checkpoint</span>
+    <h2 id="question">Question text</h2>
+    <p id="prompt">Choose the best answer.</p>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback">Correct answers move the oxygen bubble forward. Wrong answers lower lung energy.</div>
+    <div class="controls"><button class="primary" id="nextBtn">Start mission</button><button class="secondary" id="resetBtn">Reset</button></div>
+  </div>
+</section>
+</main>
+</div>
+<script>
+const missions = [
+ {place:'Nose / Mouth', q:'What is the main job of the nose before air travels deeper?', prompt:'Think about filtering and warming air.', a:'Filters, warms and moistens incoming air', opts:['Pumps blood into the lungs','Filters, warms and moistens incoming air','Stores oxygen for later use'], why:'The nose helps clean, warm and moisten air before it moves down the airway.'},
+ {place:'Trachea', q:'Which tube carries air from the throat toward the lungs?', prompt:'This is sometimes called the windpipe.', a:'Trachea', opts:['Oesophagus','Trachea','Aorta'], why:'The trachea is the windpipe. The oesophagus carries food, not air.'},
+ {place:'Bronchi', q:'After the trachea splits, air enters two main branches called...', prompt:'One branch goes to each lung.', a:'Bronchi', opts:['Bronchi','Alveoli','Capillaries'], why:'The bronchi are the two major branches leading into the lungs.'},
+ {place:'Bronchioles', q:'What are bronchioles?', prompt:'They are smaller branches inside the lungs.', a:'Tiny airway branches that spread air through the lungs', opts:['Tiny airway branches that spread air through the lungs','Muscles that beat like a heart','Blood vessels that carry oxygen only'], why:'Bronchioles are small airway branches that deliver air toward the alveoli.'},
+ {place:'Alveoli', q:'Why are alveoli important?', prompt:'This is where the key gas exchange happens.', a:'They exchange oxygen and carbon dioxide with the blood', opts:['They digest food','They exchange oxygen and carbon dioxide with the blood','They produce red blood cells'], why:'Alveoli are tiny sacs where oxygen enters blood and carbon dioxide leaves blood.'},
+ {place:'Bloodstream', q:'Which blood cells carry oxygen around the body?', prompt:'They contain haemoglobin.', a:'Red blood cells', opts:['White blood cells','Platelets','Red blood cells'], why:'Red blood cells carry oxygen using haemoglobin.'},
+ {place:'Diaphragm', q:'What happens to the diaphragm when you inhale?', prompt:'Inhaling makes the chest cavity larger.', a:'It contracts and moves downward', opts:['It contracts and moves downward','It relaxes and moves upward','It stops moving completely'], why:'When the diaphragm contracts downward, lung volume increases and air flows in.'},
+ {place:'Exhale', q:'During exhalation, carbon dioxide...', prompt:'The body removes a waste gas.', a:'Leaves the blood and is breathed out', opts:['Turns into oxygen','Leaves the blood and is breathed out','Is stored in bones'], why:'Carbon dioxide is a waste gas that moves into the alveoli and is exhaled.'},
+ {place:'Gas exchange', q:'Which pair correctly describes gas exchange?', prompt:'Oxygen goes one way; carbon dioxide goes the other.', a:'Oxygen into blood, carbon dioxide out of blood', opts:['Oxygen into blood, carbon dioxide out of blood','Both gases stay in the lungs','Carbon dioxide into blood, oxygen out of blood'], why:'At the alveoli, oxygen enters blood while carbon dioxide leaves blood.'},
+ {place:'Full pathway', q:'Choose the correct pathway for air.', prompt:'Order matters.', a:'Nose → trachea → bronchi → bronchioles → alveoli', opts:['Nose → trachea → bronchi → bronchioles → alveoli','Nose → alveoli → trachea → bronchi','Alveoli → nose → bronchioles → trachea'], why:'Air moves from the nose/mouth down the trachea, into bronchi, bronchioles and finally alveoli.'}
+];
+let score=0, combo=0, oxygen=70, index=-1, answered=false;
+const pos=[16,76,138,202,282,348,318,245,292,348];
+const bubble=document.getElementById('bubble'), scoreEl=document.getElementById('score'), comboEl=document.getElementById('combo'), oxygenEl=document.getElementById('oxygen'), roundEl=document.getElementById('round'), choicesEl=document.getElementById('choices'), qEl=document.getElementById('question'), promptEl=document.getElementById('prompt'), feedback=document.getElementById('feedback'), tag=document.getElementById('tag'), nextBtn=document.getElementById('nextBtn'), resetBtn=document.getElementById('resetBtn'), energyFill=document.getElementById('energyFill'), energyText=document.getElementById('energyText');
+function shuffle(arr){return arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);}
+function renderStats(){scoreEl.textContent=score;comboEl.textContent=combo;oxygenEl.textContent=oxygen+'%';roundEl.textContent=Math.min(index+1, missions.length)+'/'+missions.length;energyFill.style.width=oxygen+'%';energyText.textContent=oxygen+'%';bubble.style.top=(pos[Math.max(0,index)]||16)+'px';}
+function loadMission(){answered=false; index++; if(index>=missions.length){finish();return;} const m=missions[index]; tag.textContent=m.place; qEl.textContent=m.q; promptEl.textContent=m.prompt; choicesEl.innerHTML=''; shuffle(m.opts).forEach(opt=>{const b=document.createElement('button');b.className='choice';b.textContent=opt;b.onclick=()=>choose(b,opt,m);choicesEl.appendChild(b);}); feedback.textContent='Select the best answer to move the oxygen bubble forward.'; nextBtn.textContent='Skip checkpoint'; renderStats();}
+function choose(btn,opt,m){if(answered)return; answered=true; [...choicesEl.children].forEach(b=>b.disabled=true); if(opt===m.a){combo++; const gained=100+(combo*20); score+=gained; oxygen=Math.min(100,oxygen+7); btn.classList.add('correct'); feedback.textContent='Correct: '+m.why+' +'+gained+' points.';} else {combo=0; oxygen=Math.max(0,oxygen-15); btn.classList.add('wrong'); [...choicesEl.children].forEach(b=>{if(b.textContent===m.a)b.classList.add('correct')}); feedback.textContent='Not quite. '+m.why+' Lung energy dropped.';} nextBtn.textContent=index===missions.length-1?'Finish run':'Next checkpoint'; renderStats();}
+function finish(){qEl.textContent='Run complete'; promptEl.textContent='Your oxygen bubble reached the bloodstream.'; choicesEl.innerHTML=''; const rank=score>1050?'Respiratory Expert':score>750?'Strong Breather':'Needs practice'; feedback.innerHTML='Final score: <b>'+score+'</b><br>Rank: <b>'+rank+'</b><br>Best learning target: remember the full air pathway and the role of alveoli.'; nextBtn.textContent='Play again'; nextBtn.onclick=reset;}
+function reset(){score=0;combo=0;oxygen=70;index=-1;nextBtn.onclick=loadMission;loadMission();}
+nextBtn.onclick=loadMission;resetBtn.onclick=reset;renderStats();qEl.textContent='Ready to breathe?';promptEl.textContent='Press Start mission.';
+</script>
+</body>
+</html>
